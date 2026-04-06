@@ -1,24 +1,28 @@
 #!/usr/bin/env python3
+from dataclasses import dataclass
+from typing import Optional
 import numpy as np
 
 
-class plana_5_bar_invers_data: 
-        a_1 = 0
-        a_2 = 0
-        b_1 = 0
-        b_2 = 0
-        theta_1 = 0
-        theta_2 = 0
-        a_1_2 = 0
-        a_2_2 = 0
-        theta_p1 = 0
-        theta_p2 = 0
-        theta_end_1 = 0
-        theta_end_2 = 0
-        theta_end_n = 0
-        theta_mid = 0
-        theta_hip = 0
-        
+@dataclass
+class Planar5BarInverse3DResult:
+    a_1: Optional[float] = None
+    a_2: Optional[float] = None
+    b_1: Optional[float] = None
+    b_2: Optional[float] = None
+    theta_1: Optional[float] = None
+    theta_2: Optional[float] = None
+    a_1_2: Optional[float] = None
+    a_2_2: Optional[float] = None
+    theta_p1: Optional[float] = None
+    theta_p2: Optional[float] = None
+    theta_end_1: Optional[float] = None
+    theta_end_2: Optional[float] = None
+    theta_end_n: Optional[float] = None
+    theta_mid: Optional[float] = None
+    theta_hip: Optional[float] = None
+
+
 def transl(x,y,z):
     T = np.eye(4)
     T[0, 3] = x
@@ -230,11 +234,9 @@ def planar_5_bar_invers_3d(x, y, z, theta_x, theta_y, theta_z, l_0, l_1, l_2, l_
     if theta_a1 is None:
         return None
 
-    theta_pow_1 = theta_z
-
-    plana_5_bar_invers_data.theta_hip = 0
-    plana_5_bar_invers_data.theta_1 = theta_a1
-    plana_5_bar_invers_data.theta_2 = theta_a2
-    plana_5_bar_invers_data.theta_end_1 = theta_pow_1
-
-    return plana_5_bar_invers_data
+    return Planar5BarInverse3DResult(
+        theta_1=theta_a1,
+        theta_2=theta_a2,
+        theta_end_1=theta_z,
+        theta_hip=0,
+    )

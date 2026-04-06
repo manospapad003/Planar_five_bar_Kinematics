@@ -8,6 +8,7 @@ from .kinematics import (
     inverse_2d_kinematics,
     planar_5_bar_invers_3d,
     forward_3d_kinematics,
+    Planar5BarInverse3DResult,
 )
 
 __all__ = [
@@ -20,5 +21,6 @@ __all__ = [
     "inverse_2d_kinematics",
     "planar_5_bar_invers_3d",
     "forward_3d_kinematics",
+    "Planar5BarInverse3DResult",
 ]
 

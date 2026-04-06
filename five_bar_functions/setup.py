@@ -5,9 +5,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="five_bar_functions",
-    version="0.2.0",
+    version="0.3.0",
     author="Author Name",
-    description="Python package for computing 2D kinematics of five-bar linkage mechanisms",
+    description="Python package for computing 2D and 3D kinematics of five-bar linkage mechanisms",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/yourusername/five_bar_functions",
