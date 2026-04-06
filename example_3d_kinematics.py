@@ -94,7 +94,7 @@ ax.set_xlim(mid_x - max_range, mid_x + max_range)
 ax.set_ylim(mid_y - max_range, mid_y + max_range)
 ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
-plt.show()
+
 
 # Inverse kinematics example
 print("\n" + "="*60)
@@ -127,3 +127,8 @@ print(f"  Final EE position error: {position_error:.6f}")
 print(f"\nAngle Comparison:")
 print(f"  Original theta1: {np.degrees(theta1):.3f} deg, Inverse theta1: {np.degrees(inv_sol.theta_1):.3f} deg")
 print(f"  Original theta2: {np.degrees(theta2):.3f} deg, Inverse theta2: {np.degrees(inv_sol.theta_2):.3f} deg")
+
+
+
+
+plt.show()
