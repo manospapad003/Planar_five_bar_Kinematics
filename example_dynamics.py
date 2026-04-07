@@ -11,6 +11,7 @@ import sys
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import interpolate
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'five_bar_functions'))
 import five_bar_functions as fbf
@@ -329,6 +330,166 @@ def example_jacobian_velocity_mapping(l0, l1, l2):
         print(f"Error: {e}")
 
 
+def example_ee_speed_workspace_mapping(l0, l1, l2, resolution=30, max_joint_speed=10.0, speed_threshold=1000.0):
+    """
+    Create a mapping of end-effector speeds across the workspace.
+
+    This function computes the maximum achievable end-effector speed at each
+    point in the workspace when both joints move at their maximum speed.
+
+    Parameters:
+    -----------
+    l0 : float
+        Base half distance
+    l1 : float
+        First link length
+    l2 : float
+        Second link length
+    resolution : int
+        Number of samples per motor angle for the grid
+    max_joint_speed : float
+        Maximum joint angular speed (deg/s) for speed calculations
+    speed_threshold : float
+        Cap for maximum displayed speed (mm/s) to clip outliers
+    """
+
+    print("\n" + "="*70)
+    print("Example 5: End-Effector Speed Workspace Mapping")
+    print("="*70)
+
+    print(f"\nComputing EE speed mapping across workspace (resolution={resolution}x{resolution})...")
+    print(f"Max joint speed: {max_joint_speed} deg/s")
+    print(f"Speed threshold: {speed_threshold} mm/s")
+
+    # Create a grid of configurations
+    theta1_range = np.linspace(0, 2 * np.pi, resolution)
+    theta2_range = np.linspace(0, 2 * np.pi, resolution)
+
+    # Storage for valid configurations and their speeds
+    valid_configs = []
+    ee_speeds = []
+
+    max_speed = 0
+    min_speed = float('inf')
+
+    for theta1 in theta1_range:
+        for theta2 in theta2_range:
+            try:
+                J, x, y = fbf.estimate_jacobian_analytical_2d(
+                    theta1, theta2, l0, l1, l2, solution=1
+                )
+
+                # Calculate maximum end-effector speed when both joints move at max speed
+                # Joint velocities in rad/s
+                omega_max = np.array([np.deg2rad(max_joint_speed), np.deg2rad(max_joint_speed)])
+                v_ee_max = J @ omega_max
+                speed = np.linalg.norm(v_ee_max)
+
+                valid_configs.append([x, y])
+                ee_speeds.append(speed)
+
+                max_speed = max(max_speed, speed)
+                min_speed = min(min_speed, speed)
+
+            except ValueError:
+                # Skip invalid configurations
+                continue
+
+    valid_configs = np.array(valid_configs)
+    ee_speeds = np.array(ee_speeds)
+    
+    # Apply threshold to cap speeds for visualization
+    ee_speeds_capped = np.minimum(ee_speeds, speed_threshold)
+    capped_count = np.sum(ee_speeds > speed_threshold)
+
+    print(f"Valid configurations: {len(valid_configs)}")
+    print(f"Speed range (raw): {min_speed:.3f} - {max_speed:.3f} mm/s")
+    print(f"Configurations exceeding threshold: {capped_count}")
+
+    # Print statistics
+    print(f"\n--- End-Effector Speed Statistics (Raw) ---")
+    print(f"Mean speed: {np.mean(ee_speeds):.3f} mm/s")
+    print(f"Std speed:  {np.std(ee_speeds):.3f} mm/s")
+    print(f"Min speed:  {min_speed:.3f} mm/s")
+    print(f"Max speed:  {max_speed:.3f} mm/s")
+    
+    print(f"\n--- End-Effector Speed Statistics (Capped at {speed_threshold} mm/s) ---")
+    print(f"Mean speed: {np.mean(ee_speeds_capped):.3f} mm/s")
+    print(f"Std speed:  {np.std(ee_speeds_capped):.3f} mm/s")
+    print(f"Min speed:  {np.min(ee_speeds_capped):.3f} mm/s")
+    print(f"Max speed:  {np.max(ee_speeds_capped):.3f} mm/s")
+
+    # Create the plot with interpolated heatmap
+    fig, ax = plt.subplots(figsize=(12, 10))
+
+    # Create a regular grid for interpolation
+    x_min, x_max = np.min(valid_configs[:, 0]), np.max(valid_configs[:, 0])
+    y_min, y_max = np.min(valid_configs[:, 1]), np.max(valid_configs[:, 1])
+
+    # Add some padding to the grid boundaries
+    x_padding = (x_max - x_min) * 0.05
+    y_padding = (y_max - y_min) * 0.05
+
+    # Interpolate the speed data onto the regular grid
+    try:
+        # Use griddata for more robust interpolation
+        from scipy.interpolate import griddata
+
+        # Create interpolation grid (higher resolution for smoother heatmap)
+        grid_resolution = 50  # Reduced for performance
+        xi = np.linspace(x_min - x_padding, x_max + x_padding, grid_resolution)
+        yi = np.linspace(y_min - y_padding, y_max + y_padding, grid_resolution)
+        XI, YI = np.meshgrid(xi, yi)
+
+        # Interpolate using griddata (more robust than interp2d)
+        ZI = griddata((valid_configs[:, 0], valid_configs[:, 1]), ee_speeds_capped,
+                     (XI, YI), method='linear', fill_value=np.min(ee_speeds_capped))
+
+        # Create filled contour heatmap from interpolated data
+        levels = np.linspace(np.min(ee_speeds_capped), np.max(ee_speeds_capped), 50)
+        contourf = ax.contourf(XI, YI, ZI, levels=levels, cmap='hot', extend='both')
+
+        # Add contour lines for better visibility
+        contour = ax.contour(XI, YI, ZI, levels=levels, colors='black',
+                           linewidths=0.3, alpha=0.2)
+
+    except Exception as e:
+        print(f"Interpolation failed, falling back to scattered plot: {e}")
+        # Fallback to original tricontourf if interpolation fails
+        levels = np.linspace(np.min(ee_speeds_capped), np.max(ee_speeds_capped), 50)
+        contourf = ax.tricontourf(valid_configs[:, 0], valid_configs[:, 1], ee_speeds_capped,
+                                  levels=levels, cmap='hot', extend='both')
+        contour = ax.tricontour(valid_configs[:, 0], valid_configs[:, 1], ee_speeds_capped,
+                               levels=levels, colors='black', linewidths=0.3, alpha=0.2)
+
+    # Add colorbar
+    cbar = plt.colorbar(contourf, ax=ax, label='Max EE Speed (mm/s)')
+    cbar.set_label('Max EE Speed (mm/s)', fontsize=12)
+
+    # Set labels and title
+    ax.set_xlabel('X (mm)', fontsize=12)
+    ax.set_ylabel('Y (mm)', fontsize=12)
+    ax.set_title(f'End-Effector Speed Heatmap (Interpolated)\n' +
+                 f'Max joint speed: {max_joint_speed} deg/s | Speed threshold: {speed_threshold} mm/s',
+                 fontsize=14, fontweight='bold')
+    ax.axis('equal')
+
+    # Add text annotation with statistics
+    stats_text = f'Speed Statistics (Capped):\n' + \
+                 f'Mean: {np.mean(ee_speeds_capped):.1f} mm/s\n' + \
+                 f'Std:  {np.std(ee_speeds_capped):.1f} mm/s\n' + \
+                 f'Range: {np.min(ee_speeds_capped):.1f} - {np.max(ee_speeds_capped):.1f} mm/s'  
+
+    ax.text(0.02, 0.98, stats_text,
+            transform=ax.transAxes, fontsize=10, verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.9))
+
+    plt.tight_layout()
+    plt.show()
+
+    return valid_configs, ee_speeds
+
+
 if __name__ == "__main__":
     # Link parameters (in mm)
     l0 = 31.0         # Base half distance
@@ -348,6 +509,7 @@ if __name__ == "__main__":
     example_singularity_detection(l0, l1, l2)
     example_workspace_jacobian_analysis(l0, l1, l2, resolution=40)
     example_jacobian_velocity_mapping(l0, l1, l2)
+    example_ee_speed_workspace_mapping(l0, l1, l2, resolution=2000, speed_threshold=400.0)
     
     print("\n" + "="*70)
     print("All dynamics examples completed!")

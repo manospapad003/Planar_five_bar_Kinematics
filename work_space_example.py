@@ -191,4 +191,4 @@ if __name__ == "__main__":
     
     # Compute and plot the full workspace
     print("\nComputing full workspace...")
-    plot_workspace(l0, l1, l2, resolution=100)
+    plot_workspace(l0, l1, l2, resolution=200)
