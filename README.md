@@ -48,6 +48,26 @@ print(result)
 
 - `example_kinematics.py` demonstrates 2D forward kinematics and a 3D inverse verification.
 - `example_3d_kinematics.py` demonstrates 3D forward kinematics and inverse validation with plotting.
+- `work_space_example.py` demonstrates workspace visualization by traversing all possible motor angles and plotting the end-effector positions.
+
+### Workspace Visualization
+
+The `work_space_example.py` script computes and visualizes the workspace of the five-bar mechanism. It traverses all possible motor angle combinations (θ₁ and θ₂) from 0 to 2π and plots the reachable end-effector positions for both kinematic solutions.
+
+**Features:**
+- Compute workspace points by sampling motor angles at configurable resolution
+- Visualize both solution branches of the mechanism's workspace
+- Display a single configuration showing the linkage geometry
+- Easily adjustable parameters for link lengths and resolution
+
+**Usage:**
+```bash
+python work_space_example.py
+```
+
+This generates two plots:
+1. A single mechanism configuration showing the linkage geometry, motor angles, and both end-effector solutions
+2. The complete workspace showing all reachable positions across the full motor angle range
 
 ## Package structure
 
